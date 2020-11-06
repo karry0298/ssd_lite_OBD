@@ -68,22 +68,24 @@ if __name__ == '__main__':
 
     for epoch in range(load_weights_from_epoch + 1, EPOCHS):
         start_time = time.time()
+        
         for step, batch_data in enumerate(train_data):
             images, labels = ReadDataset().read(batch_data)
             train_step(batch_images=images, batch_labels=labels)
             time_per_step = (time.time() - start_time) / (step + 1)
-            
-            if (step % 200 == 0) or (
-            
-            print("Epoch: {}/{}, step: {}/{}, {:.2f}s/step, loss: {:.5f}, "
-                  "cls loss: {:.5f}, reg loss: {:.5f}".format(epoch,
-                                                              EPOCHS,
-                                                              step,
-                                                              tf.math.ceil(train_count / BATCH_SIZE),
-                                                              time_per_step,
-                                                              loss_metric.result(),
-                                                              cls_loss_metric.result(),
-                                                              reg_loss_metric.result()))
+
+            if(step%200 == 0) or (step == tf.math.ceil(train_count / BATCH_SIZE)-1) : 
+
+                print("Epoch: {}/{}, step: {}/{}, {:.2f}s/step, loss: {:.5f}, "
+                    "cls loss: {:.5f}, reg loss: {:.5f}".format(epoch,
+                                                                EPOCHS,
+                                                                step,
+                                                                tf.math.ceil(train_count / BATCH_SIZE),
+                                                                time_per_step,
+                                                                loss_metric.result(),
+                                                                cls_loss_metric.result(),
+                                                                reg_loss_metric.result()))
+
         loss_metric.reset_states()
         cls_loss_metric.reset_states()
         reg_loss_metric.reset_states()
@@ -95,3 +97,4 @@ if __name__ == '__main__':
             visualize_training_results(pictures=test_images_dir_list, model=ssd, epoch=epoch)
 
     ssd.save_weights(filepath=save_model_dir+"saved_model", save_format="tf")
+
