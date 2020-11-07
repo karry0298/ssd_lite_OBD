@@ -31,7 +31,7 @@ class SSD(tf.keras.Model):
 
     def _predict_layer(self, k):
         filter_num = k * (self.num_classes + 4)
-        return tf.keras.layers.Conv2D(filters=filter_num, kernel_size=(3,3), strides=1, padding="same")
+        return tf.keras.layers.Conv2D(filters=filter_num, kernel_size=(1,1), strides=1, padding="same")
 
     def _get_k(self, i):
         # k is the number of boxes generated at each position of the feature map.
@@ -68,7 +68,7 @@ class SSD(tf.keras.Model):
         x = tf.nn.relu(self.conv3_1(x))
         bn_bef4 = BatchNormalization(momentum=0.99,name='bef_BN_4')(x)
         af_bef4 = Activation('relu', name='Bef_AF_4')(bn_bef4)
-        x = tf.nn.relu(self.conv2_2(af_bef4))
+        x = tf.nn.relu(self.conv3_2(af_bef4))
         branch_4 = x
         dwcv4 = tf.keras.layers.DepthwiseConv2D(kernel_size=3, strides=2, activation=None,use_bias=False, padding='same', name='4_dwconv2')(branch_4)
         b4 = BatchNormalization(momentum=0.99,name='4_sepconv2_bn')(dwcv4)
@@ -79,7 +79,7 @@ class SSD(tf.keras.Model):
         x = tf.nn.relu(self.conv4_1(x))
         bn_bef5 = BatchNormalization(momentum=0.99,name='bef_BN_3')(x)
         af_bef5 = Activation('relu', name='Bef_AF_3')(bn_bef5)
-        x = tf.nn.relu(self.conv2_2(af_bef5))
+        x = tf.nn.relu(self.conv4_2(af_bef5))
         branch_5 = x
         dwcv5 = tf.keras.layers.DepthwiseConv2D(kernel_size=3, strides=2, activation=None,use_bias=False, padding='same', name='5_dwconv2')(branch_5)
         b5 = BatchNormalization(momentum=0.99,name='5_sepconv2_bn')(dwcv5)
