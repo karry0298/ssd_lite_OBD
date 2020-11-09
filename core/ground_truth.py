@@ -81,7 +81,7 @@ class MakeGT(object):
         xy = 0.5 * (boxes[..., 0:2] + boxes[..., 2:4])
         wh = boxes[..., 2:4] - boxes[..., 0:2]
         c = boxes[..., -1:]
-        return tf.concat((xy, wh, c), axis=-1)  # (center_x, center_y, w, h, c)
+        return np.concatenate((xy, wh, c), axis=-1)  # (center_x, center_y, w, h, c)
 
     @staticmethod
     def __get_valid_boxes(boxes):
@@ -125,7 +125,7 @@ class MakeGT(object):
         g_cy = (g_cy - d_cy) / d_h
         g_w = np.log(g_w / d_w)
         g_h = np.log(g_h / d_h)
-        return tf.stack([g_cx, g_cy, g_w, g_h], axis=0)
+        return np.stack([g_cx, g_cy, g_w, g_h], axis=0)
 
     def generate_gt_boxes(self):
         true_boxes = self.___transform_true_boxes()  # shape: (batch_size, MAX_BOXES_PER_IMAGE, 5)

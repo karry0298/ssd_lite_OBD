@@ -18,54 +18,44 @@ def print_model_summary(network):
 
 if __name__ == '__main__':
     # GPU settings
-    # gpus = tf.config.list_physical_devices("GPU")
-    # if gpus:
-    #     for gpu in gpus:
-    #         tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
-    #         logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-    #         print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
+    gpus = tf.config.list_physical_devices("GPU")
+    if gpus:
+        for gpu in gpus:
+            tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+            logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
 
-    strategy = tf.distribute.MirroredStrategy()
-    print ('Number of devices: {}'.format(strategy.num_replicas_in_sync))
 
     dataset = TFDataset()
     train_data, train_count = dataset.generate_datatset()
-    
-    # train_data = strategy.experimental_distribute_dataset(train_data)
-    # train_count = strategy.experimental_distribute_dataset(train_count)
 
-    with strategy.scope():
-        loss = SSDLoss()
+    ssd = SSD()
+    print_model_summary(network=ssd)
 
-        # makeGt = MakeGT
+    if load_weights_before_training:
+        ssd.load_weights(filepath=save_model_dir+"epoch-{}".format(load_weights_from_epoch))
+        print("Successfully load weights!")
+    else:
+        load_weights_from_epoch = -1
 
-        # metrics
-        loss_metric = tf.metrics.Mean()
-        cls_loss_metric = tf.metrics.Mean()
-        reg_loss_metric = tf.metrics.Mean()
+    # loss
+    loss = SSDLoss()
 
-    with strategy.scope():
+    # optimizer
+    lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=1e-3,
+                                                                 decay_steps=20000,
+                                                                 decay_rate=0.96)
+    optimizer = tf.optimizers.Adam(learning_rate=lr_schedule)
 
-        ssd = SSD()
-        print_model_summary(network=ssd)
-
-        if load_weights_before_training:
-            ssd.load_weights(filepath=save_model_dir+"epoch-{}".format(load_weights_from_epoch))
-            print("Successfully load weights!")
-        else:
-            load_weights_from_epoch = -1
-
-        # optimizer
-        lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=1e-3,
-                                                                    decay_steps=20000,
-                                                                    decay_rate=0.96)
-        optimizer = tf.optimizers.Adam(learning_rate=lr_schedule)
+    # metrics
+    loss_metric = tf.metrics.Mean()
+    cls_loss_metric = tf.metrics.Mean()
+    reg_loss_metric = tf.metrics.Mean()
 
     def train_step(batch_images, batch_labels):
         with tf.GradientTape() as tape:
             pred = ssd(batch_images, training=True)
             output = ssd_prediction(feature_maps=pred, num_classes=NUM_CLASSES)
-            print(output)
             gt = MakeGT(batch_labels, pred)
             gt_boxes = gt.generate_gt_boxes()
             loss_value, cls_loss, reg_loss = loss(y_true=gt_boxes, y_pred=output)
@@ -75,36 +65,26 @@ if __name__ == '__main__':
         cls_loss_metric.update_state(values=cls_loss)
         reg_loss_metric.update_state(values=reg_loss)
 
-        return loss_metric
-
-
-    @tf.function
-    def distributed_train_step(batch_images, batch_labels):
-      per_replica_losses = strategy.run(train_step, args=(batch_images, batch_labels))
-      return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
-                            axis=None)
-
 
     for epoch in range(load_weights_from_epoch + 1, EPOCHS):
         start_time = time.time()
-        loss = 0
+        
         for step, batch_data in enumerate(train_data):
             images, labels = ReadDataset().read(batch_data)
-            loss += distributed_train_step(batch_images=images, batch_labels=labels)
             train_step(batch_images=images, batch_labels=labels)
             time_per_step = (time.time() - start_time) / (step + 1)
 
-            # if(step%200 == 0) or (step == tf.math.ceil(train_count / BATCH_SIZE)-1) : 
+            if(step%200 == 0) or (step == tf.math.ceil(train_count / BATCH_SIZE)-1) : 
 
-            # print("Epoch: {}/{}, step: {}/{}, {:.2f}s/step, loss: {:.5f}, "
-            #     "cls loss: {:.5f}, reg loss: {:.5f}".format(epoch,
-            #                                                 EPOCHS,
-            #                                                 step,
-            #                                                 tf.math.ceil(train_count / BATCH_SIZE),
-            #                                                 time_per_step,
-            #                                                 loss_metric.result(),
-            #                                                 cls_loss_metric.result(),
-            #                                                 reg_loss_metric.result()))
+                print("Epoch: {}/{}, step: {}/{}, {:.2f}s/step, loss: {:.5f}, "
+                    "cls loss: {:.5f}, reg loss: {:.5f}".format(epoch,
+                                                                EPOCHS,
+                                                                step,
+                                                                tf.math.ceil(train_count / BATCH_SIZE),
+                                                                time_per_step,
+                                                                loss_metric.result(),
+                                                                cls_loss_metric.result(),
+                                                                reg_loss_metric.result()))
 
         loss_metric.reset_states()
         cls_loss_metric.reset_states()
@@ -117,3 +97,4 @@ if __name__ == '__main__':
             visualize_training_results(pictures=test_images_dir_list, model=ssd, epoch=epoch)
 
     ssd.save_weights(filepath=save_model_dir+"saved_model", save_format="tf")
+
