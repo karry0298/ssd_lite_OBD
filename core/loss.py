@@ -51,7 +51,6 @@ class SSDLoss:
         pred_coord = y_pred[..., self.num_classes:]
 
 
-
         absolute_value = tf.math.abs(true_coord - pred_coord)
         mask_boolean = tf.math.greater_equal(x=absolute_value, y=1.0)
         mask_float32 = tf.cast(x=mask_boolean, dtype=tf.float32)
