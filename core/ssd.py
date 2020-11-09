@@ -10,7 +10,7 @@ class SSD(tf.keras.Model):
         self.anchor_ratios = ASPECT_RATIOS
 
         self.backbone = MobileNet()
-        self.learnable_factor = self.add_weight(shape=(1, 1, 1, 512), dtype=tf.float32, initializer=tf.keras.initializers.Ones(), trainable=True)
+        self.learnable_factor = self.add_weight(shape=(1, 1, 1, 512), dtype=tf.float32, initializer=tf.keras.initializers.Ones(), trainable=True , name='bakamon')
         # self.conv1 = tf.keras.layers.Conv2D(filters=1024, kernel_size=(1, 1), strides=1, padding="same")
         self.conv2_1 = tf.keras.layers.Conv2D(filters=256, kernel_size=(1, 1),  padding="same")
         # self.conv2_2 = tf.keras.layers.Conv2D(filters=512, kernel_size=(3, 3), padding="same")

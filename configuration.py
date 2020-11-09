@@ -35,7 +35,7 @@ gamma = 2.0
 reg_loss_weight = 0.5
 
 # dataset
-PASCAL_VOC_DIR = "./dataset/VOC2012/"
+PASCAL_VOC_DIR = "./dataset/voc2012//VOC2012/"
 PASCAL_Test_DIR = "./dataset/Test/"
 
 # The 20 object classes of PASCAL VOC
